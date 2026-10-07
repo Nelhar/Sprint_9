@@ -1,0 +1,47 @@
+@startuml stakeholder-map
+!pragma layout smetana
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam rectangle {
+  RoundCorner 8
+  BorderColor #555555
+}
+title Africa Delivery — карта стейкхолдеров «Влияние / интерес»\n(ось Y — влияние на решение, ось X — интерес к проекту)
+
+rectangle "**ДЕРЖАТЬ УДОВЛЕТВОРЁННЫМИ**\n(высокое влияние, низкий интерес)" as KS #FFF4CC {
+  rectangle "Регуляторы\nNDPC / ODPC / InfoReg\n**приоритет 0 — закон**" as REG #FFFFFF
+  rectangle "Партнёры: M-Pesa, Flutterwave,\nPaystack, Sendbox, Meta,\nApple / Google" as PART #FFFFFF
+  rectangle "Юрист А. Нвосу\n(советник)" as LAW #FFFFFF
+}
+rectangle "**УПРАВЛЯТЬ ПЛОТНО**\n(высокое влияние, высокий интерес)" as MC #F8D7DA {
+  rectangle "**Инвестор К. Орлов**\nфинальный ЛПР · приоритет 1" as INV #FFFFFF
+  rectangle "**CFO А. Вебер**\nвето на бюджет · приоритет 2" as CFO #FFFFFF
+  rectangle "**CEO М. Лефевр**\nскоуп · приоритет 3" as CEO #FFFFFF
+  rectangle "**CTO Р. Менон**\nтехнологии · приоритет 4" as CTO #FFFFFF
+}
+rectangle "**МОНИТОРИТЬ**\n(низкое влияние, низкий интерес)" as MON #E2E3E5 {
+  rectangle "Покупатели\n(по одному)" as BUY #FFFFFF
+  rectangle "Том Брэдли (ушёл)\nтолько артефакт A4" as PM #FFFFFF
+}
+rectangle "**ДЕРЖАТЬ В КУРСЕ**\n(низкое влияние, высокий интерес)" as KI #D4EDDA {
+  rectangle "Маркетинг С. Алмейда\nвнешние обещания · приоритет 5" as MKT #FFFFFF
+  rectangle "Продавцы МСБ\n(пилот 100)" as SEL #FFFFFF
+  rectangle "Команда\n6 контракторов" as TEAM #FFFFFF
+}
+
+LAW -[hidden]right- PART
+PART -[hidden]right- INV
+INV -[hidden]right- CEO
+REG -[hidden]down- BUY
+LAW -[hidden]down- REG
+PART -[hidden]down- PM
+CFO -[hidden]down- MKT
+CTO -[hidden]down- TEAM
+BUY -[hidden]right- PM
+PM -[hidden]right- MKT
+MKT -[hidden]right- TEAM
+TEAM -[hidden]right- SEL
+
+INV -[#C0392B,bold]-> CFO : делегировал\nбюджет
+INV -[#C0392B,bold]-> CTO : делегировал\nтехнологии
+@enduml

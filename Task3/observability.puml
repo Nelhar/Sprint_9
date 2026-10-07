@@ -1,0 +1,64 @@
+@startuml observability
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam nodesep 40
+skinparam ranksep 60
+skinparam rectangle {
+  RoundCorner 8
+}
+title Наблюдаемость Africa Delivery — схема сбора (MVP)
+
+rectangle "Клиенты" as CL #F3F6FA {
+  component "Мобильное приложение\n(Flutter)" as APP
+  component "Синтетические пробы\nЛагос · Найроби · Йоханнесбург" as SYN
+}
+
+rectangle "AWS af-south-1 (Кейптаун) — ядро, EKS" as CORE #EAF2FB {
+  component "Монолит Go\n(OTel SDK: метрики RED,\nтрейсы, JSON-логи)" as MON
+  component "Outbox / очередь\n(traceparent в заголовке)" as OBX
+  component "Воркеры ядра: адаптеры партнёров KE\nRED по каждому партнёру" as ADP
+  component "kube-state-metrics, node-exporter,\nCloudWatch (RDS, ALB, CloudFront)\n— USE-метрики" as INFRA
+  component "OTel Agent (DaemonSet)\nмаскирование ПДн · batch ·\nloadbalancing exporter по traceID" as COL1
+  component "OTel Gateway (Deployment ×2)\ntail sampling: 100% ошибок,\n100% медленных > 2 с, 5% успешных" as GW
+}
+
+rectangle "AWS Local Zone Лагос — ячейка Нигерии" as NG #FFF4CC {
+  component "Монолит (ячейка NG)\n+ воркер партнёров NG\n+ PostgreSQL" as MONNG
+  component "OTel Agent NG\nудаляет ПДн ДО выхода из страны\n(только токены cust_ng_*)" as COL2
+}
+
+rectangle "Grafana Cloud (managed, CN.MSV.01)" as GC #E8F5E9 {
+  database "Mimir / Prometheus\n(метрики, SLI)" as MIM
+  database "Loki\n(логи)" as LOKI
+  database "Tempo\n(трейсы)" as TEMPO
+  component "Grafana: 3 слоя дашбордов\nExecutive · SLO/SRE · Deep dive" as GRAF
+  component "SLO burn-rate алерты\n(14,4× за 1 ч · 6× за 6 ч)" as ALERT
+  component "Grafana OnCall\nэскалация дежурному" as ONCALL
+}
+
+actor "Дежурный инженер" as SRE
+actor "Инвестор / CEO\n(дашборд с телефона)" as EXEC
+
+APP --> MON : HTTPS + traceparent
+APP --> GRAF : RUM: время до первого товара,\nкраши (Firebase → экспорт)
+SYN --> MON : проверки каждую минуту\n(CUJ: карточка, оформление)
+MON --> OBX : события + traceparent
+OBX --> ADP : асинхронно
+MON --> COL1 : OTLP
+ADP --> COL1 : OTLP
+INFRA --> COL1 : scrape
+MONNG --> COL2 : OTLP
+COL2 --> COL1 : OTLP без ПДн
+COL1 --> GW : спаны трейса —\nна один gateway
+COL1 --> MIM : метрики
+COL1 --> LOKI : логи
+GW --> TEMPO : трейсы\nпосле сэмплирования
+MIM --> GRAF
+LOKI --> GRAF
+TEMPO --> GRAF
+MIM --> ALERT : SLI → бюджет ошибок
+ALERT --> ONCALL : инцидент
+ONCALL --> SRE : push · SMS · звонок
+GRAF --> EXEC : заказы, выручка,\nрегистрации (1 мин)
+@enduml

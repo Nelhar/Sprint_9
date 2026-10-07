@@ -1,0 +1,55 @@
+@startgantt roadmap
+title Africa Delivery — roadmap: месяц 1 → месяц 2 (MVP, 15.10.2026) → месяц 6 → месяц 12
+language ru
+printscale weekly
+saturday are closed
+sunday are closed
+Project starts 2026-08-17
+
+-- Критический путь «бумаг» (не код) --
+[Закупка облака через реселлера, оплата по счёту] starts 2026-08-20 and lasts 15 days
+[D-U-N-S, аккаунты Apple и Google] starts 2026-08-20 and lasts 8 days
+[Договоры PSP: Flutterwave, Safaricom Daraja go-live] starts 2026-08-20 and lasts 20 days
+[Договоры логистики: Sendbox, перевозчик KE + резерв] starts 2026-08-20 and lasts 15 days
+[Регистрация NDPC/ODPC, внешний DPO] starts 2026-08-24 and lasts 25 days
+[WhatsApp BSP и утверждение шаблонов] starts 2026-08-24 and lasts 20 days
+
+-- Месяц 1–2: MVP (6 контракторов) --
+[WP-01 Платформа: EKS, Terraform, CI/CD, OTel] starts 2026-08-20 and lasts 15 days
+[WP-02 Ячейка NG, PII-хранилище, согласия, OTP] starts 2026-09-03 and lasts 20 days
+[WP-03 Каталог, медиа, поиск] starts 2026-08-27 and lasts 20 days
+[WP-04 Оформление заказа, резерв, флеш-распродажи] starts 2026-09-03 and lasts 20 days
+[WP-05 Платежи: M-Pesa, Paystack, Flutterwave, наличные, выплаты, сверка] starts 2026-09-03 and lasts 27 days
+[WP-06 Доставка: Sendbox, KE, ПВЗ, статусы] starts 2026-09-10 and lasts 15 days
+[WP-07 Уведомления: SMS, WhatsApp, push, USSD-статус] starts 2026-09-10 and lasts 15 days
+[WP-08 Приложение Flutter (Android + iOS)] starts 2026-08-20 and lasts 30 days
+[WP-09 Бэк-офис и кабинет-лайт продавца] starts 2026-09-07 and lasts 20 days
+[Walking skeleton end-to-end] happens 2026-09-16
+[Месяц 1: контрольная точка] happens 2026-09-17
+[Сборка в TestFlight / Play Internal] happens 2026-09-15
+[WP-11 Нагрузочный тест ×10, DR-учения, хаос] starts 2026-09-24 and lasts 10 days
+[Приложения опубликованы в сторах] happens 2026-10-01
+[Code freeze] happens 2026-10-08
+[ЗАПУСК MVP (месяц 2)] happens 2026-10-15
+[Гиперкеа: дежурства ×2, ежедневный разбор] starts 2026-10-15 and lasts 20 days
+
+-- Месяц 3–6 --
+[Отзывы (текст), рефералы] starts 2026-11-16 and lasts 25 days
+[Выделение сервиса Notifications (strangler)] starts 2027-01-04 and lasts 20 days
+[USSD-заказ в Кении (M-Pesa STK из USSD)] starts 2027-01-11 and lasts 20 days
+[ЮАР: ячейка ZA, Ozow + Paystack, POPIA] starts 2026-12-01 and lasts 45 days
+[Кабинет продавца v1: заказы, выплаты] starts 2027-01-18 and lasts 20 days
+[Месяц 6: контрольная точка] happens 2027-02-15
+
+-- Месяц 7–12 --
+[Гана и Уганда: ячейки, Flutterwave / MTN MoMo] starts 2027-04-12 and lasts 60 days
+[B2B: оптовые цены, счета, партнёрский API] starts 2027-05-03 and lasts 45 days
+[Аналитика продавца, track & trace, автовозвраты] starts 2027-05-10 and lasts 50 days
+[Антифрод ML v1, видео на ПВЗ (если законно)] starts 2027-06-07 and lasts 40 days
+[Локализация: FR, суахили, хауса, йоруба] starts 2027-06-14 and lasts 30 days
+[Месяц 12: контрольная точка] happens 2027-08-16
+
+-- Г2 (Q4 2027): по триггерам ADR-001 --
+[Kafka (MSK) вместо SQS; сервис Payments] starts 2027-10-04 and lasts 40 days
+[Warm standby в GCP (SLO 99,95%)] starts 2027-10-18 and lasts 20 days
+@endgantt

@@ -1,0 +1,104 @@
+@startuml deployment-diagram
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam node {
+  BackgroundColor #F7F9FC
+  BorderColor #4A6FA5
+}
+skinparam database {
+  BackgroundColor #EAF2FB
+}
+title Deployment — Africa Delivery MVP (15.10.2026)
+
+node "Смартфон покупателя\nAndroid < $150 / iOS" as phone {
+  artifact "app.apk / .ipa\n(Flutter, офлайн-кеш;\nendpoint по стране)" as apk
+}
+node "Кнопочный телефон" as feature {
+  artifact "USSD *XXX#, SMS" as ussd
+}
+
+cloud "CloudFront (только публичные данные)\nPoP: Лагос · Найроби · Йоханнесбург · Кейптаун" as cf
+
+node "AWS af-south-1 (Кейптаун) — ядро: каталог, KE, ZA" as aws {
+  node "VPC 10.0.0.0/16, 3 AZ" as vpc {
+    node "ALB + WAF\n(multi-AZ)" as alb
+    node "EKS control plane\n(managed; управляет и узлами в Лагосе)" as eks
+    node "AZ-a: узлы EKS\nm7g.large ×2" as aza {
+      artifact "monolith (≥ 1 реплика)" as m1
+      artifact "worker KE" as w1
+      artifact "otel-agent, otel-gateway" as oc1
+    }
+    node "AZ-b: узлы EKS\nm7g.large ×2" as azb {
+      artifact "monolith (≥ 1 реплика)" as m2
+      artifact "worker KE" as w2
+      artifact "argo-cd, argo-rollouts" as argo
+    }
+    database "RDS PostgreSQL\nprimary (AZ-a)\nstandby sync (AZ-b)\nrds.logical_replication = 1" as rds
+    database "RDS read replica\n(AZ-c)" as rr
+    database "ElastiCache Valkey\n(AZ-a / AZ-b)" as vk
+    queue "SQS" as sqs
+  }
+  database "S3: медиа" as s3
+  node "KMS, Secrets Manager,\nECR (pull-through cache)" as sec
+}
+
+node "AWS Local Zone Лагос (af-south-1-los-1)\nодна площадка, без SLA зоны; нет RDS, S3, NAT Gateway" as lz {
+  node "ALB в Local Zone\napi-ng: TLS в Лагосе" as albng
+  node "NAT-инстансы ×2\n(t3.small, EIP)" as nat
+  node "Узлы EKS m5.xlarge ×2\n(подсеть Local Zone)" as lzn {
+    artifact "monolith role=cell-ng" as cng
+    artifact "worker role=worker-ng\n(Paystack, Flutterwave,\nSendbox, SMS +234)" as wng
+    artifact "openbao" as bao
+    artifact "otel-agent-ng\n(вычистка ПДн)" as ocng
+  }
+  database "PostgreSQL NG\nCloudNativePG\nm5.xlarge ×2 (sync)" as pgng
+}
+
+node "MTN Cloud Лагос (Tier III)" as mtn {
+  database "Объектное хранилище (S3 API)\nWAL / бэкапы NG (Barman Cloud)" as mtnobj
+}
+
+node "GCP africa-south1 (Йоханнесбург) — pilot light" as gcp {
+  database "Cloud SQL (малый инстанс)\nлогическая реплика ядра\nчерез Google DMS" as csql
+  database "GCS: ежедневный pg_dump" as gcs
+  artifact "Terraform: GKE\n(по команде DR)" as tf
+}
+
+cloud "Grafana Cloud\n(метрики, логи, трейсы, OnCall)" as graf
+node "GitHub\n(репозиторий, Actions)" as gh
+
+node "Партнёры (внешние API)\nM-Pesa Daraja · Paystack · Flutterwave ·\nSendbox / перевозчик KE · Africa's Talking (SMS, USSD) ·\nWhatsApp Cloud API (BSP)" as partners
+
+apk --> cf : HTTPS (каталог, медиа)
+apk --> alb : HTTPS (заказ, профиль KE/ZA)
+apk --> albng : HTTPS api-ng (заказ, профиль, оплата NG)
+ussd --> partners : USSD / SMS через Africa's Talking
+partners --> alb : вебхуки KE, USSD-callback, DLR
+partners --> albng : вебхуки PSP NG, Sendbox
+cf --> alb : промах кеша
+cf --> s3 : медиа
+alb --> m1
+alb --> m2
+albng --> cng
+cng --> m1 : каталог, резерв остатка,\nагрегаты — без ПДн (mTLS)
+m1 --> rds : SQL
+m2 --> rds : SQL
+rds --> rr : репликация
+m1 --> vk
+m1 --> sqs : outbox
+sqs --> w1
+sqs --> w2
+w1 --> partners : платежи, выплаты, отправки,\nSMS, WhatsApp KE (REST)
+cng --> pgng : SQL
+cng --> bao
+cng --> wng : outbox ячейки
+wng --> nat
+nat --> partners : платежи и выплаты NG, Sendbox,\nSMS +234 (без транзита через Кейптаун)
+pgng --> mtnobj : WAL 5 мин, бэкап сутки\n(только внутри Нигерии)
+rds --> csql : логическая репликация (pglogical)
+rds --> gcs : pg_dump раз в сутки
+oc1 --> graf : OTLP
+ocng --> oc1 : OTLP без ПДн
+gh --> argo : GitOps (pull)
+eks ..> lzn : управление узлами\n(без ПДн)
+@enduml

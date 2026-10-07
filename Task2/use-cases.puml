@@ -1,0 +1,67 @@
+@startuml use-cases
+!pragma layout smetana
+left to right direction
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #EAF2FB
+  BorderColor #1168BD
+}
+skinparam packageStyle rectangle
+title Use Case — ключевые сценарии MVP Africa Delivery (15.10.2026)
+
+actor "Покупатель\n(приложение)" as Buyer
+actor "Сельский покупатель\n(USSD/SMS)" as Rural
+actor "Продавец" as Seller
+actor "Оператор\nбэк-офиса" as Ops
+actor "CEO / инвестор" as Exec
+actor "PSP\n(M-Pesa, Flutterwave)" as PSP <<system>>
+actor "Логистический\nпартнёр" as Log <<system>>
+actor "SMS / WhatsApp\nшлюз" as Msg <<system>>
+
+rectangle "Africa Delivery — MVP" {
+  usecase "UC-01 Найти товар\n(каталог, поиск, диплинк из рекламы)" as UC1
+  usecase "UC-02 Зарегистрироваться\n(OTP + согласия)" as UC2
+  usecase "UC-03 Оформить заказ" as UC3
+  usecase "UC-04 Выбрать доставку\nили ПВЗ" as UC4
+  usecase "UC-05 Оплатить\n(M-Pesa / Flutterwave)" as UC5
+  usecase "UC-06 Оплатить наличными\nкурьеру (Лагос, Найроби)" as UC6
+  usecase "UC-07 Отследить заказ" as UC7
+  usecase "UC-08 Получить уведомление\n(SMS / WhatsApp / push)" as UC8
+  usecase "UC-09 Заявить возврат" as UC9
+  usecase "UC-10 Узнать статус\nзаказа по USSD/SMS" as UC10
+  usecase "UC-11 Разместить товары\n(через оператора / CSV)" as UC11
+  usecase "UC-12 Подтвердить заказ\n(WhatsApp или кабинет)" as UC12
+  usecase "UC-13 Получить выплату\nпосле доставки" as UC13
+  usecase "UC-14 Модерировать каталог\nи провести KYC продавца" as UC14
+  usecase "UC-15 Разобрать возврат\nили спор" as UC15
+  usecase "UC-16 Смотреть дашборд\n(обновление 1 мин)" as UC16
+}
+
+Buyer --> UC1
+Buyer --> UC2
+Buyer --> UC3
+Buyer --> UC7
+Buyer --> UC9
+Rural --> UC10
+Seller --> UC11
+Seller --> UC12
+Seller --> UC13
+Ops --> UC14
+Ops --> UC15
+Exec --> UC16
+
+UC3 ..> UC4 : <<include>>
+UC3 ..> UC5 : <<include>>
+UC6 ..> UC3 : <<extend>>
+UC3 ..> UC8 : <<include>>
+UC9 ..> UC15 : <<include>>
+
+UC5 --> PSP
+UC13 --> PSP
+UC4 --> Log
+UC7 --> Log
+UC8 --> Msg
+UC10 --> Msg
+UC12 --> Msg
+@enduml

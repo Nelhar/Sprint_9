@@ -1,0 +1,82 @@
+@startuml value-stream
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam rectangle {
+  RoundCorner 6
+  BorderColor #666666
+}
+skinparam ArrowColor #1168BD
+skinparam ArrowThickness 2
+skinparam nodesep 25
+skinparam ranksep 30
+title Value Stream «Покупатель получил товар — продавец получил деньги» с нанесёнными capabilities\nЭтапы идут сверху вниз; справа — capabilities этапа. Цвет: <back:#D4EDDA> Build </back>  <back:#FFF4CC> Partner </back>  <back:#DCE8F7> Buy </back>; в скобках — когда
+
+rectangle "<b>1. Привлечь</b>\nрадио, билборды, стримы → диплинк" as H1 #BBD6F2
+rectangle "<b>2. Найти и выбрать</b>\nкаталог и поиск на 3G, офлайн" as H2 #BBD6F2
+rectangle "<b>3. Оформить и оплатить</b>\nM-Pesa, Paystack, Flutterwave, наличные" as H3 #BBD6F2
+rectangle "<b>4. Исполнить</b>\nпродавец подтвердил, отправка создана" as H4 #BBD6F2
+rectangle "<b>5. Доставить и выдать</b>\nкурьер или ПВЗ (нет адресов)" as H5 #BBD6F2
+rectangle "<b>6. Рассчитаться с продавцом</b>\nв день подтверждённой доставки" as H6 #BBD6F2
+rectangle "<b>7. Поддержать и вернуть</b>\nвозврат 30 дней, споры" as H7 #BBD6F2
+
+H1 -down-> H2
+H2 -down-> H3
+H3 -down-> H4
+H4 -down-> H5
+H5 -down-> H6
+H6 -down-> H7
+
+rectangle "2.1 Диплинки и атрибуция\nApp Links Build + Branch Buy (MVP)" as C21 #DCE8F7
+rectangle "2.2 Согласия и рассылки\nBuild + Partner (MVP)" as C22 #D4EDDA
+rectangle "2.3 Лояльность, рефералы\nBuild (6 мес.)" as C23 #D4EDDA
+H1 -right[dotted]- C21
+C21 -right[hidden]- C22
+C22 -right[hidden]- C23
+
+rectangle "3.1 Каталог офлайн (Flutter)\nBuild (MVP)" as C31 #D4EDDA
+rectangle "1.2 Каталог и медиа\nBuild + CDN Buy (MVP)" as C12 #D4EDDA
+rectangle "3.2 Поиск\nBuild → Buy (MVP / 12 мес.)" as C32 #D4EDDA
+rectangle "3.3 Рекомендации\nBuild (6–12 мес.)" as C33 #D4EDDA
+rectangle "1.3 Цены и промо\nBuild (MVP)" as C13 #D4EDDA
+H2 -right[dotted]- C31
+C31 -right[hidden]- C12
+C12 -right[hidden]- C32
+C32 -right[hidden]- C33
+C33 -right[hidden]- C13
+
+rectangle "4.1 Корзина и оформление\nBuild (MVP)" as C41 #D4EDDA
+rectangle "4.2 Приём платежей\nPartner + маршрутизация Build (MVP)" as C42 #FFF4CC
+rectangle "4.3 Флеш-распродажи\nBuild (MVP)" as C43 #D4EDDA
+H3 -right[dotted]- C41
+C41 -right[hidden]- C42
+C42 -right[hidden]- C43
+
+rectangle "8.3 WhatsApp для продавцов\nPartner (MVP)" as C83 #FFF4CC
+rectangle "5.1 Передача отправок\nPartner + ACL (MVP)" as C51 #FFF4CC
+H4 -right[dotted]- C83
+C83 -right[hidden]- C51
+
+rectangle "5.2 ПВЗ и выдача\nPartner (MVP; видео — 12 мес.)" as C52 #FFF4CC
+rectangle "5.3 Track & trace\nстатусы → карта (12 мес.)" as C53 #FFF4CC
+rectangle "8.2 SMS / USSD статус\nPartner (MVP)" as C82 #FFF4CC
+H5 -right[dotted]- C52
+C52 -right[hidden]- C53
+C53 -right[hidden]- C82
+
+rectangle "6.1 Выплаты\nBuild + Partner B2C (MVP)" as C61 #D4EDDA
+rectangle "6.2 Сверка\nBuild (MVP)" as C62 #D4EDDA
+H6 -right[dotted]- C61
+C61 -right[hidden]- C62
+
+rectangle "7.1 Поддержка\nBuy helpdesk (MVP)" as C71 #DCE8F7
+rectangle "5.4 Возвраты\nвручную (MVP) → авто (12 мес.)" as C54 #D4EDDA
+rectangle "7.2 Антифрод\nPartner (MVP) → ML (12 мес.)" as C72 #FFF4CC
+rectangle "7.3 Отзывы\nBuild (6 мес.; медиа — 12 мес.)" as C73 #D4EDDA
+H7 -right[dotted]- C71
+C71 -right[hidden]- C54
+C54 -right[hidden]- C72
+C72 -right[hidden]- C73
+
+rectangle "<b>Сквозные возможности (поддерживают все этапы)</b>\n1.1 Онбординг и KYC продавцов — Partner + Build (MVP)\n1.4 Модерация и снятие контента (KICA) — Build (MVP)\n8.1 Мобильное приложение — Build (MVP)\n9.1 Идентификация и резидентность — Build (MVP, ADR-003)\n9.2 Дашборды — Buy (MVP) · 9.3 Комплаенс — Partner (MVP)\n8.4 Партнёрский API B2B — Build (12 мес.)" as X #FFFFFF
+H7 -[hidden]down- X
+@enduml

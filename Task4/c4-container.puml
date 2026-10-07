@@ -1,0 +1,86 @@
+@startuml c4-container
+!include <C4/C4_Container>
+
+title C4 Container — Africa Delivery MVP, контейнеры сгруппированы по регионам развёртывания
+
+Person(buyer, "Покупатель", "Android/iOS, 3G")
+Person(seller, "Продавец", "Веб-лайт или WhatsApp")
+Person(ops, "Оператор / CEO", "Бэк-офис, дашборд")
+
+System_Boundary(dev, "Устройства пользователей") {
+  Container(app, "Мобильное приложение", "Flutter", "Каталог с офлайн-кешем, корзина, заказ, статус. Endpoint API выбирается по стране регистрации")
+  Container(web, "Веб-кабинет продавца и бэк-офис", "SPA (React)", "Каталог, заказы, модерация, KYC, возвраты")
+}
+
+System_Boundary(edge, "CDN — CloudFront (PoP Лагос, Найроби, ЮАР)") {
+  Container(cdn, "CDN", "CloudFront", "Только публичные данные: медиа (1 год), JSON каталога (60 с, stale-if-error 24 ч)")
+}
+
+System_Boundary(core, "AWS af-south-1 Кейптаун — ядро (каталог, KE, ZA), EKS") {
+  Container(gw, "Ingress ядра", "ALB + NGINX Ingress, WAF", "TLS, rate limiting; запросы KE/ZA и каталог")
+  Container(mono, "Модульный монолит", "Go", "Модули: каталог, заказы, платежи, доставка, уведомления, идентификация и согласия, продавцы, отчёты")
+  Container(worker, "Воркеры ядра", "Go (тот же бинарник, роль worker)", "Outbox relay, адаптеры партнёров KE: M-Pesa, Flutterwave, перевозчик KE, SMS, WhatsApp")
+  ContainerDb(pg, "PostgreSQL ядра", "RDS Multi-AZ", "Каталог, остатки, данные KE/ZA, outbox; схема на модуль")
+  ContainerDb(replica, "Read replica", "RDS", "Отчёты, дашборд CEO (1 мин)")
+  ContainerDb(cache, "Кеш", "ElastiCache Valkey", "Cache-aside каталога, rate limits")
+  ContainerQueue(q, "Очередь", "SQS (Kafka — по триггеру, план Г2)", "Задачи уведомлений и отправок")
+  ContainerDb(s3, "Медиа", "S3", "Фото товаров WebP")
+}
+
+System_Boundary(ng, "AWS Local Zone Лагос — ячейка данных Нигерии (ПДн не покидают страну)") {
+  Container(albng, "Точка входа NG", "ALB в Local Zone + ingress ячейки", "Домен api-ng: TLS терминируется в Лагосе")
+  Container(cellng, "Монолит, роль cell-ng", "Go", "PII-хранилище (токенизация), заказы, платежи и выплаты NG, согласия, KYC продавцов NG")
+  Container(workerng, "Воркер ячейки NG", "Go, роль worker", "Адаптеры партнёров NG: Paystack, Flutterwave, Sendbox, SMS на +234")
+  Container(nat, "NAT-инстансы ×2", "EC2 в Local Zone", "Исходящий трафик ячейки — без транзита через Кейптаун (NAT Gateway в Лагосе нет)")
+  ContainerDb(pgng, "PostgreSQL NG", "CloudNativePG на EC2 m5.xlarge ×2", "ПДн, заказы, KYC нигерийцев")
+  Container(kms, "Хранилище ключей", "OpenBao", "Ключи полевого шифрования, crypto-shredding")
+}
+
+System_Boundary(ng2, "MTN Cloud Лагос — вторая площадка Нигерии") {
+  ContainerDb(bkng, "Бэкапы и WAL NG", "Объектное хранилище (S3 API)", "Barman Cloud: WAL каждые 5 мин, бэкап раз в сутки")
+}
+
+System_Boundary(dr, "GCP africa-south1 Йоханнесбург — DR (pilot light)") {
+  ContainerDb(bkcore, "Реплика ядра", "Cloud SQL (малый инстанс) + GCS", "Логическая репликация через Google DMS; ежедневный pg_dump; Terraform для GKE")
+}
+
+System_Ext(pspke, "PSP Кении", "M-Pesa Daraja, Flutterwave")
+System_Ext(pspng, "PSP Нигерии", "Paystack (основной), Flutterwave (резерв)")
+System_Ext(log, "Логистика", "Sendbox (NG), перевозчик KE")
+System_Ext(msg, "Мессенджинг", "Africa's Talking SMS/USSD, WhatsApp Cloud API")
+
+Rel(buyer, app, "Пользуется")
+Rel(seller, web, "Пользуется")
+Rel(ops, web, "Пользуется")
+Rel(app, cdn, "Каталог и медиа", "HTTPS")
+Rel(app, gw, "Заказ и профиль KE/ZA", "HTTPS/JSON")
+Rel(app, albng, "Заказ, профиль, оплата NG", "HTTPS, api-ng")
+Rel(web, gw, "API (продавцы KE/ZA, бэк-офис)", "HTTPS/JSON")
+Rel(web, albng, "Продавцы NG, KYC и споры NG (бэк-офис)", "HTTPS, api-ng")
+Rel(cdn, gw, "Промах кеша", "HTTPS")
+Rel(cdn, s3, "Медиа", "HTTPS")
+Rel(gw, mono, "Запросы", "HTTP")
+Rel(albng, cellng, "Запросы с ПДн NG", "HTTP")
+Rel(cellng, mono, "Каталог, цены, резерв остатка; агрегаты для дашборда — без ПДн", "HTTPS, mTLS")
+Rel(mono, pg, "Чтение и запись", "SQL")
+Rel(mono, cache, "Cache-aside", "RESP")
+Rel(mono, q, "Задачи из outbox", "SQS API")
+Rel(q, worker, "Доставка задач", "SQS API")
+Rel(worker, pspke, "Платежи и выплаты KE", "REST + webhook")
+Rel(worker, log, "Отправки KE", "REST + webhook")
+Rel(worker, msg, "SMS, WhatsApp, USSD (KE)", "REST")
+Rel(cellng, pgng, "ПДн и заказы NG", "SQL")
+Rel(cellng, kms, "Ключи", "HTTPS")
+Rel(cellng, workerng, "Задачи из outbox ячейки", "очередь в БД")
+Rel(workerng, nat, "Исходящие вызовы", "HTTPS")
+Rel(nat, pspng, "Платежи и выплаты NG (исходящие вызовы)", "REST")
+Rel(pspng, albng, "Вебхуки статусов платежей NG", "HTTPS, api-ng")
+Rel(nat, log, "Отправки Sendbox (исходящие вызовы)", "REST")
+Rel(log, albng, "Вебхуки статусов отправок NG", "HTTPS, api-ng")
+Rel(nat, msg, "SMS на +234", "REST")
+Rel(pgng, bkng, "WAL и бэкапы — только внутри Нигерии", "S3 API")
+Rel(pg, bkcore, "Логическая репликация (DMS) + pg_dump", "pglogical / HTTPS")
+Rel(replica, pg, "Репликация", "PostgreSQL")
+
+SHOW_LEGEND()
+@enduml

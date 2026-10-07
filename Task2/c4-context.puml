@@ -1,0 +1,45 @@
+@startuml c4-context
+!include <C4/C4_Context>
+
+title C4 Context — Africa Delivery (MVP, 15.10.2026: Нигерия + Кения)
+
+Person(buyer, "Покупатель", "Смартфон Android < $150, 3G/4G с обрывами (A2, У)")
+Person(rural, "Сельский покупатель", "Кнопочный телефон, нет мобильного интернета (A2, У)")
+Person(seller, "Продавец МСБ", "100 в пилоте; веб-кабинет-лайт или WhatsApp (У)")
+Person(ops, "Оператор бэк-офиса", "Модерация каталога, KYC, споры, возвраты (A4 #26)")
+Person(exec, "CEO / инвестор", "Базовая аналитика, живой дашборд в день запуска (У, A2)")
+
+System(ad, "Africa Delivery", "Модульный монолит (Go) на managed K8s; ячейки данных по странам (ADR-001, ADR-003)")
+
+System_Ext(mpesa, "M-Pesa (Safaricom Daraja)", "Кения: STK Push, Buy Goods, B2C-выплаты")
+System_Ext(flw, "Flutterwave", "Нигерия: резервный PSP; Кения: карты")
+System_Ext(paystack, "Paystack", "Нигерия: основной PSP (дешевле с НДС)")
+System_Ext(sendbox, "Sendbox API", "Логистика Нигерия: курьеры, ПВЗ, наличные курьеру")
+System_Ext(sendy, "Sendy / резервный перевозчик KE", "Логистика Кения (Sendy — риск, second-source)")
+System_Ext(wa, "WhatsApp Business API", "Канал продавцов без кабинета (через BSP)")
+System_Ext(sms, "SMS/USSD-шлюз", "Africa's Talking: SMS, OTP, USSD-меню")
+System_Ext(stores, "App Store / Google Play + FCM/APNs", "Дистрибуция приложения, пуш-уведомления")
+
+Rel(buyer, ad, "Ищет товары, оформляет и оплачивает заказ, отслеживает статус", "HTTPS, мобильное приложение")
+Rel(rural, sms, "Набирает USSD-код, получает SMS", "USSD/SMS")
+Rel(sms, ad, "Передаёт USSD-сессии и статусы доставки SMS", "HTTPS callback")
+Rel(ad, sms, "Отправляет OTP и уведомления о заказе", "REST")
+Rel(seller, ad, "Ведёт каталог и заказы в веб-кабинете-лайт", "HTTPS")
+Rel(seller, wa, "Подтверждает заказ", "WhatsApp")
+Rel(wa, ad, "Доставляет ответы продавцов", "Webhook")
+Rel(ad, wa, "Шлёт шаблонные utility-сообщения продавцам", "Cloud API")
+Rel(ops, ad, "Модерирует каталог, проводит KYC, разбирает возвраты", "HTTPS, бэк-офис")
+Rel(exec, ad, "Смотрит дашборд: регистрации, заказы, выручка (обновление 1 мин)", "HTTPS")
+Rel(ad, mpesa, "Инициирует STK Push, выплаты продавцам", "REST + callback")
+Rel(ad, flw, "Резервная оплата NG, карты KE, выплаты продавцам (Transfers)", "REST + webhook")
+Rel(ad, paystack, "Оплата NG, выплаты продавцам NG (Transfers)", "REST + webhook")
+Rel(ad, sendbox, "Создаёт отправку, получает трек и статус", "REST + webhook")
+Rel(ad, sendy, "Создаёт доставку в Найроби", "REST + webhook")
+Rel(ad, stores, "Публикует приложение, отправляет пуши", "HTTPS")
+
+Lay_R(mpesa, flw)
+Lay_R(flw, paystack)
+Lay_R(sendbox, sendy)
+
+SHOW_LEGEND($hideStereotype="true")
+@enduml
